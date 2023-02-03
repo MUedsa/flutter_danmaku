@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_danmaku/src/config.dart';
 import 'package:flutter_danmaku/src/flutter_danmaku_bullet.dart';
@@ -12,9 +10,9 @@ enum AddBulletResCode { success, noSpace }
 
 class AddBulletResBody {
   AddBulletResCode code = AddBulletResCode.success;
-  String message = '';
+  String message;
   dynamic data;
-  AddBulletResBody(this.code, {this.message, this.data});
+  AddBulletResBody(this.code, {this.message = '', this.data});
 }
 
 class FlutterDanmakuController {
@@ -25,7 +23,7 @@ class FlutterDanmakuController {
   List<FlutterDanmakuTrack> get tracks => _trackManager.tracks;
   List<FlutterDanmakuBulletModel> get bullets => _bulletManager.bullets;
 
-  Function setState;
+  Function? setState;
 
   /// 是否暂停
   bool get isPause => FlutterDanmakuConfig.pause;
@@ -40,22 +38,30 @@ class FlutterDanmakuController {
   // 成功返回AddBulletResBody.data为bulletId
   AddBulletResBody addDanmaku(String text,
       {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll,
-      Color color,
-      Widget Function(Text) builder,
-      int offsetMS,
-      FlutterDanmakuBulletPosition position = FlutterDanmakuBulletPosition.any}) {
+      Color? color,
+      Widget Function(Text)? builder,
+      int? offsetMS,
+      FlutterDanmakuBulletPosition position =
+          FlutterDanmakuBulletPosition.any}) {
     assert(text.isNotEmpty);
     // 先获取子弹尺寸
     Size bulletSize = FlutterDanmakuUtils.getDanmakuBulletSizeByText(text);
     // 寻找可用的轨道
-    FlutterDanmakuTrack track = _findAvailableTrack(bulletSize, bulletType: bulletType, position: position, offsetMS: offsetMS);
+    FlutterDanmakuTrack? track = _findAvailableTrack(bulletSize,
+        bulletType: bulletType, position: position, offsetMS: offsetMS);
     // 如果没有找到可用的轨道
     if (track == null)
       return AddBulletResBody(
         AddBulletResCode.noSpace,
       );
-    FlutterDanmakuBulletModel bullet = _bulletManager.initBullet(text, track.id, bulletSize, track.offsetTop,
-        prevBulletId: track.lastBulletId, position: position, bulletType: bulletType, color: color, builder: builder, offsetMS: offsetMS);
+    FlutterDanmakuBulletModel bullet = _bulletManager.initBullet(
+        text, track.id, bulletSize, track.offsetTop,
+        prevBulletId: track.lastBulletId,
+        position: position,
+        bulletType: bulletType,
+        color: color,
+        builder: builder,
+        offsetMS: offsetMS);
     if (bulletType == FlutterDanmakuBulletType.scroll) {
       track.lastBulletId = bullet.id;
     } else {
@@ -113,20 +119,24 @@ class FlutterDanmakuController {
   /// 修改文字大小
   void changeLableSize(int size) {
     assert(size > 0);
-    FlutterDanmakuConfig.bulletLableSize = size.toDouble();
-    FlutterDanmakuConfig.areaOfChildOffsetY = FlutterDanmakuConfig.getAreaOfChildOffsetY();
+    FlutterDanmakuConfig.bulletLabelSize = size.toDouble();
+    FlutterDanmakuConfig.areaOfChildOffsetY =
+        FlutterDanmakuConfig.getAreaOfChildOffsetY();
     _trackManager.recountTrackOffset(_bulletManager.bulletsMap);
-    _trackManager.resetBottomBullets(_bulletManager.bottomBullets, reSize: true);
+    _trackManager.resetBottomBullets(_bulletManager.bottomBullets,
+        reSize: true);
   }
 
   /// 改变视图尺寸后调用，比如全屏
   void resizeArea(Size size) {
     FlutterDanmakuConfig.areaSize = size;
-    FlutterDanmakuConfig.areaOfChildOffsetY = FlutterDanmakuConfig.getAreaOfChildOffsetY();
+    FlutterDanmakuConfig.areaOfChildOffsetY =
+        FlutterDanmakuConfig.getAreaOfChildOffsetY();
     _trackManager.recountTrackOffset(_bulletManager.bulletsMap);
     _trackManager.resetBottomBullets(_bulletManager.bottomBullets);
     if (FlutterDanmakuConfig.pause) {
-      _renderManager.renderNextFramerate(_bulletManager.bullets, _allOutLeaveCallBack);
+      _renderManager.renderNextFrameRate(
+          _bulletManager.bullets, _allOutLeaveCallBack);
     }
   }
 
@@ -140,30 +150,36 @@ class FlutterDanmakuController {
 
   /// 请不要调用这个函数
   void delBulletById(UniqueKey bulletId) {
-    _trackManager.removeTrackBindIdByBulletModel(_bulletManager.bulletsMap[bulletId]);
+    _trackManager
+        .removeTrackBindIdByBulletModel(_bulletManager.bulletsMap[bulletId]!);
     _bulletManager.removeBulletByKey(bulletId);
   }
 
   // 子弹完全离开后回调
   void _allOutLeaveCallBack(UniqueKey bulletId) {
-    if (_bulletManager.bulletsMap[bulletId].trackId != null) {
-      _trackManager.removeTrackBindIdByBulletModel(_bulletManager.bulletsMap[bulletId]);
+    if (_bulletManager.bulletsMap[bulletId]?.trackId != null) {
+      _trackManager
+          .removeTrackBindIdByBulletModel(_bulletManager.bulletsMap[bulletId]!);
       _bulletManager.bulletsMap.remove(bulletId);
     }
   }
 
   void _run() => _renderManager.run(() {
-        _renderManager.renderNextFramerate(_bulletManager.bullets, _allOutLeaveCallBack);
-      }, setState);
+        _renderManager.renderNextFrameRate(
+            _bulletManager.bullets, _allOutLeaveCallBack);
+      }, setState ?? () {});
 
   /// 获取允许注入的轨道
-  FlutterDanmakuTrack _findAllowInsertTrack(Size bulletSize, {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll, int offsetMS = 0}) {
-    FlutterDanmakuTrack _track;
+  FlutterDanmakuTrack? _findAllowInsertTrack(Size bulletSize,
+      {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll,
+      int? offsetMS}) {
+    FlutterDanmakuTrack? _track;
     // 在现有轨道里找
     for (int i = 0; i < tracks.length; i++) {
       // 当前轨道溢出可用轨道
       if (FlutterDanmakuUtils.isEnableTrackOverflowArea(tracks[i])) break;
-      bool allowInsert = _trackAllowInsert(tracks[i], bulletSize, bulletType: bulletType, offsetMS: offsetMS);
+      bool allowInsert = _trackAllowInsert(tracks[i], bulletSize,
+          bulletType: bulletType, offsetMS: offsetMS);
       if (allowInsert) {
         _track = tracks[i];
         break;
@@ -174,41 +190,54 @@ class FlutterDanmakuController {
 
   /// 查询该轨道是否允许注入
   bool _trackAllowInsert(FlutterDanmakuTrack track, Size needInsertBulletSize,
-      {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll, int offsetMS = 0}) {
+      {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll,
+      int? offsetMS}) {
     UniqueKey lastBulletId;
     assert(needInsertBulletSize.height > 0);
     assert(needInsertBulletSize.width > 0);
     // 非底部弹幕 超出配置的可视区域 就不可注入
-    if (bulletType == FlutterDanmakuBulletType.fixed) return track.allowInsertFixedBullet;
+    if (bulletType == FlutterDanmakuBulletType.fixed)
+      return track.allowInsertFixedBullet;
     if (track.lastBulletId == null) return true;
-    lastBulletId = track.lastBulletId;
-    FlutterDanmakuBulletModel lastBullet = _bulletManager.bulletsMap[lastBulletId];
+    lastBulletId = track.lastBulletId!;
+    FlutterDanmakuBulletModel? lastBullet =
+        _bulletManager.bulletsMap[lastBulletId];
     if (lastBullet == null) return true;
-    return !FlutterDanmakuUtils.trackInsertBulletHasBump(lastBullet, needInsertBulletSize, offsetMS: offsetMS);
+    return !FlutterDanmakuUtils.trackInsertBulletHasBump(
+        lastBullet, needInsertBulletSize,
+        offsetMS: offsetMS);
   }
 
   // 查询可用轨道
-  FlutterDanmakuTrack _findAvailableTrack(Size bulletSize,
+  FlutterDanmakuTrack? _findAvailableTrack(Size bulletSize,
       {FlutterDanmakuBulletType bulletType = FlutterDanmakuBulletType.scroll,
-      int offsetMS = 0,
-      FlutterDanmakuBulletPosition position = FlutterDanmakuBulletPosition.any}) {
+      int? offsetMS,
+      FlutterDanmakuBulletPosition position =
+          FlutterDanmakuBulletPosition.any}) {
     assert(bulletSize.height > 0);
     assert(bulletSize.width > 0);
     if (position == FlutterDanmakuBulletPosition.any) {
-      return _findAllowInsertTrack(bulletSize, bulletType: bulletType, offsetMS: offsetMS);
+      return _findAllowInsertTrack(bulletSize,
+          bulletType: bulletType, offsetMS: offsetMS);
     } else {
       return _findAllowInsertBottomTrack(bulletSize);
     }
   }
 
   // 查找允许注入的底部轨道
-  FlutterDanmakuTrack _findAllowInsertBottomTrack(Size bulletSize) {
-    FlutterDanmakuTrack _track;
+  FlutterDanmakuTrack? _findAllowInsertBottomTrack(Size bulletSize) {
+    FlutterDanmakuTrack? _track;
     // 在现有轨道里找
     // 底部弹幕 指的是 最后几条轨道 从最底下往上发
     for (int i = tracks.length - 1; i >= tracks.length - 3; i--) {
       // 从当前的弹幕里找 有没有在这个轨道上的
-      FlutterDanmakuBulletModel bullet = _bulletManager.bottomBullets.firstWhere((element) => element.trackId == tracks[i].id, orElse: () => null);
+      FlutterDanmakuBulletModel? bullet;
+      try {
+        bullet = _bulletManager.bottomBullets
+            .firstWhere((element) => element.trackId == tracks[i].id);
+      } on StateError {
+        bullet = null;
+      }
       if (bullet == null) {
         _track = tracks[i];
         break;

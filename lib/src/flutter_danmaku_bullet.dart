@@ -1,37 +1,37 @@
 // 弹幕子弹
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_danmaku/src/config.dart';
-import 'package:flutter_danmaku/src/flutter_danmaku_bullet_manager.dart';
-import 'package:flutter_danmaku/src/flutter_danmaku_controller.dart';
 import 'package:flutter_danmaku/src/flutter_danmaku_track.dart';
 import 'package:flutter_danmaku/src/flutter_danmaku_utils.dart';
 
 enum FlutterDanmakuBulletType { scroll, fixed }
+
 enum FlutterDanmakuBulletPosition { any, bottom }
 
 class FlutterDanmakuBulletModel {
   UniqueKey id;
   UniqueKey trackId;
-  UniqueKey prevBulletId;
+  UniqueKey? prevBulletId;
   Size bulletSize;
   String text;
   double offsetY;
   double _runDistance = 0;
   double everyFrameRunDistance;
   Color color = Colors.black;
-  FlutterDanmakuBulletPosition position = FlutterDanmakuBulletPosition.any;
+  FlutterDanmakuBulletPosition position;
 
-  Widget Function(Text) builder;
+  Widget Function(Text)? builder;
 
   FlutterDanmakuBulletType bulletType;
 
   /// 子弹的x轴位置
-  double get offsetX =>
-      bulletType == FlutterDanmakuBulletType.scroll ? _runDistance - bulletSize.width : FlutterDanmakuConfig.areaSize.width / 2 - (bulletSize.width / 2);
+  double get offsetX => bulletType == FlutterDanmakuBulletType.scroll
+      ? _runDistance - bulletSize.width
+      : FlutterDanmakuConfig.areaSize.width / 2 - (bulletSize.width / 2);
 
   /// 子弹最大可跑距离 子弹宽度+墙宽度
-  double get maxRunDistance => bulletSize.width + FlutterDanmakuConfig.areaSize.width;
+  double get maxRunDistance =>
+      bulletSize.width + FlutterDanmakuConfig.areaSize.width;
 
   /// 子弹整体脱离右边墙壁
   bool get allOutRight => _runDistance > bulletSize.width;
@@ -43,13 +43,15 @@ class FlutterDanmakuBulletModel {
   double get runDistance => _runDistance;
 
   /// 剩余离开的距离
-  double get remanderDistance => needRunDistace - runDistance;
+  double get remainingDistance => needRunDistance - runDistance;
 
   /// 需要走的距离
-  double get needRunDistace => FlutterDanmakuConfig.areaSize.width + bulletSize.width;
+  double get needRunDistance =>
+      FlutterDanmakuConfig.areaSize.width + bulletSize.width;
 
   /// 离开屏幕剩余需要的时间
-  double get leaveScreenRemainderTime => remanderDistance / everyFrameRunDistance;
+  double get leaveScreenRemainderTime =>
+      remainingDistance / everyFrameRunDistance;
 
   /// 子弹执行下一帧
   void runNextFrame() {
@@ -68,44 +70,51 @@ class FlutterDanmakuBulletModel {
   }
 
   FlutterDanmakuBulletModel(
-      {this.id,
-      this.trackId,
-      this.text,
-      this.bulletSize,
-      this.offsetY,
+      {required this.id,
+      required this.trackId,
+      required this.text,
+      required this.bulletSize,
+      required this.offsetY,
       this.bulletType = FlutterDanmakuBulletType.scroll,
-      this.color,
+      Color? color,
       this.prevBulletId,
-      int offsetMS,
+      int? offsetMS,
       this.builder,
-      this.position}) {
-    everyFrameRunDistance = FlutterDanmakuUtils.getBulletEveryFramerateRunDistance(bulletSize.width);
-    _runDistance = offsetMS != null ? (offsetMS / FlutterDanmakuConfig.unitTimer) * everyFrameRunDistance : 0;
+      FlutterDanmakuBulletPosition? position})
+      : this.color = color ?? Colors.black,
+        this.everyFrameRunDistance =
+            FlutterDanmakuUtils.getBulletEveryFrameRateRunDistance(
+                bulletSize.width),
+        this.position = position ?? FlutterDanmakuBulletPosition.any {
+    _runDistance = offsetMS != null
+        ? (offsetMS / FlutterDanmakuConfig.unitTimer) * everyFrameRunDistance
+        : 0;
   }
 }
 
 class FlutterDanmakuBullet extends StatelessWidget {
-  FlutterDanmakuBullet(this.danmakuId, this.text, {this.color = Colors.black, this.builder});
+  const FlutterDanmakuBullet(this.danmakuId, this.text,
+      {this.color = Colors.black, this.builder});
 
-  String text;
-  UniqueKey danmakuId;
-  Color color;
+  final String text;
+  final UniqueKey danmakuId;
+  final Color color;
 
-  Widget Function(Text) builder;
+  final Widget Function(Text)? builder;
 
-  GlobalKey key;
+  //GlobalKey key;
 
   /// 构建文字
   Widget buildText() {
     Text textWidget = Text(
       text,
       style: TextStyle(
-        fontSize: FlutterDanmakuConfig.bulletLableSize,
+        fontSize: FlutterDanmakuConfig.bulletLabelSize,
         color: color.withOpacity(FlutterDanmakuConfig.opacity),
       ),
     );
     if (builder != null) {
-      return builder(textWidget);
+      return builder!(textWidget);
     }
     return textWidget;
   }
@@ -115,7 +124,7 @@ class FlutterDanmakuBullet extends StatelessWidget {
     Text textWidget = Text(
       text,
       style: TextStyle(
-        fontSize: FlutterDanmakuConfig.bulletLableSize,
+        fontSize: FlutterDanmakuConfig.bulletLabelSize,
         foreground: Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 0.5
@@ -123,7 +132,7 @@ class FlutterDanmakuBullet extends StatelessWidget {
       ),
     );
     if (builder != null) {
-      return builder(textWidget);
+      return builder!(textWidget);
     }
     return textWidget;
   }

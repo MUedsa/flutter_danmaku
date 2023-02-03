@@ -2,33 +2,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_danmaku/flutter_danmaku.dart';
 import 'package:flutter_danmaku/src/config.dart';
-import 'package:flutter_danmaku/src/flutter_danmaku_bullet_manager.dart';
-import 'package:flutter_danmaku/src/flutter_danmaku_controller.dart';
 import 'package:flutter_danmaku/src/flutter_danmaku_utils.dart';
 
 class FlutterDanmakuTrack {
   UniqueKey id = UniqueKey();
 
-  UniqueKey lastBulletId;
+  UniqueKey? lastBulletId;
 
-  UniqueKey _bindFixedBulletId; // 绑定的静止定位弹幕ID
+  UniqueKey? _bindFixedBulletId; // 绑定的静止定位弹幕ID
 
-  UniqueKey get bindFixedBulletId => _bindFixedBulletId;
+  UniqueKey? get bindFixedBulletId => _bindFixedBulletId;
 
-  FlutterDanmakuTrack(this._trackHeight, this.offsetTop);
+  FlutterDanmakuTrack(this.trackHeight, this.offsetTop);
 
   double offsetTop;
 
-  double _trackHeight;
-
-  double get trackHeight => _trackHeight;
+  double trackHeight;
 
   // 允许注入静止弹幕
   bool get allowInsertFixedBullet => bindFixedBulletId == null;
-
-  void set trackHeight(double height) {
-    _trackHeight = height;
-  }
 
   // 卸载静止定位的子弹
   void unloadFixedBulletId() {
@@ -40,7 +32,6 @@ class FlutterDanmakuTrack {
   }
 
   void loadFixedBulletId(UniqueKey bulletId) {
-    assert(bulletId != null);
     _bindFixedBulletId = bulletId;
   }
 }
@@ -54,22 +45,26 @@ class FlutterDanmakuTrackManager {
   }
 
   // 剩余可用高度
-  double get remainderHeight => FlutterDanmakuConfig.showAreaHeight - allTrackHeight;
+  double get remainderHeight =>
+      FlutterDanmakuConfig.showAreaHeight - allTrackHeight;
 
   // 算轨道相对区域是否溢出
-  bool get isTrackOverflowArea => allTrackHeight > FlutterDanmakuConfig.areaSize.height;
+  bool get isTrackOverflowArea =>
+      allTrackHeight > FlutterDanmakuConfig.areaSize.height;
 
   // 补足屏幕内轨道
   void buildTrackFullScreen() {
     Size singleTextSize = FlutterDanmakuUtils.getDanmakuBulletSizeByText('s');
-    while (allTrackHeight < (FlutterDanmakuConfig.areaSize.height - singleTextSize.height)) {
+    while (allTrackHeight <
+        (FlutterDanmakuConfig.areaSize.height - singleTextSize.height)) {
       buildTrack(singleTextSize.height);
     }
   }
 
   FlutterDanmakuTrack buildTrack(double trackHeight) {
     assert(trackHeight > 0);
-    FlutterDanmakuTrack track = FlutterDanmakuTrack(trackHeight, allTrackHeight);
+    FlutterDanmakuTrack track =
+        FlutterDanmakuTrack(trackHeight, allTrackHeight);
     tracks.add(track);
     return track;
   }
@@ -83,7 +78,8 @@ class FlutterDanmakuTrackManager {
       tracks[i].offsetTop = currentLabelSize.height * i;
       resetBullletsByTrack(tracks[i], bulletMap);
       // 把溢出可用区域的轨道之后全部删掉
-      if ((tracks[i].trackHeight + tracks[i].offsetTop) > FlutterDanmakuConfig.areaSize.height) {
+      if ((tracks[i].trackHeight + tracks[i].offsetTop) >
+          FlutterDanmakuConfig.areaSize.height) {
         for (int j = tracks.length - 1; j >= i; j--) {
           delBullletsByTrack(tracks[j], bulletMap);
         }
@@ -96,36 +92,41 @@ class FlutterDanmakuTrackManager {
   }
 
   // 删除轨道上的所有子弹
-  void delBullletsByTrack(FlutterDanmakuTrack track, Map<UniqueKey, FlutterDanmakuBulletModel> bulletMap) {
-    if (track.bindFixedBulletId != null) bulletMap.remove(track.bindFixedBulletId);
-    UniqueKey prevBulletId = track.lastBulletId;
+  void delBullletsByTrack(FlutterDanmakuTrack track,
+      Map<UniqueKey, FlutterDanmakuBulletModel> bulletMap) {
+    if (track.bindFixedBulletId != null)
+      bulletMap.remove(track.bindFixedBulletId);
+    UniqueKey? prevBulletId = track.lastBulletId;
     while (prevBulletId != null) {
-      UniqueKey _prevBulletId = bulletMap[prevBulletId]?.prevBulletId;
+      UniqueKey? _prevBulletId = bulletMap[prevBulletId]?.prevBulletId;
       bulletMap.remove(prevBulletId);
       prevBulletId = _prevBulletId;
     }
   }
 
   // 重设轨道上的所有子弹
-  void resetBullletsByTrack(FlutterDanmakuTrack track, Map<UniqueKey, FlutterDanmakuBulletModel> bulletMap) {
+  void resetBullletsByTrack(FlutterDanmakuTrack track,
+      Map<UniqueKey, FlutterDanmakuBulletModel> bulletMap) {
     if (track.bindFixedBulletId != null) {
       if (bulletMap[track.bindFixedBulletId] == null) return;
-      bulletMap[track.bindFixedBulletId].offsetY = track.offsetTop;
-      Size newBulletSize = FlutterDanmakuUtils.getDanmakuBulletSizeByText(bulletMap[track.bindFixedBulletId].text);
-      bulletMap[track.bindFixedBulletId].bulletSize = newBulletSize;
+      bulletMap[track.bindFixedBulletId]!.offsetY = track.offsetTop;
+      Size newBulletSize = FlutterDanmakuUtils.getDanmakuBulletSizeByText(
+          bulletMap[track.bindFixedBulletId]!.text);
+      bulletMap[track.bindFixedBulletId]?.bulletSize = newBulletSize;
     }
-    UniqueKey prevBulletId = track.lastBulletId;
+    UniqueKey? prevBulletId = track.lastBulletId;
     while (prevBulletId != null) {
-      UniqueKey _prevBulletId = bulletMap[prevBulletId]?.prevBulletId;
+      UniqueKey? _prevBulletId = bulletMap[prevBulletId]?.prevBulletId;
       if (bulletMap[prevBulletId] == null) return;
-      bulletMap[prevBulletId].offsetY = track.offsetTop;
-      bulletMap[prevBulletId].completeSize();
+      bulletMap[prevBulletId]!.offsetY = track.offsetTop;
+      bulletMap[prevBulletId]!.completeSize();
       prevBulletId = _prevBulletId;
     }
   }
 
   // 重置底部弹幕位置
-  void resetBottomBullets(List<FlutterDanmakuBulletModel> bottomBullets, {bool reSize = false}) {
+  void resetBottomBullets(List<FlutterDanmakuBulletModel> bottomBullets,
+      {bool reSize = false}) {
     if (bottomBullets.isEmpty) return;
     for (int i = 0; i < bottomBullets.length; i++) {
       bottomBullets[i].rebindTrack(tracks[tracks.length - 1 - i]);
@@ -145,9 +146,18 @@ class FlutterDanmakuTrackManager {
     // 底部弹幕并没有绑定到轨道上
     if (bulletModel.position == FlutterDanmakuBulletPosition.bottom) return;
     if (bulletModel.bulletType == FlutterDanmakuBulletType.scroll) {
-      tracks.firstWhere((element) => element.lastBulletId == bulletModel.id, orElse: () => null)?.unloadLastBulletId();
-    } else if (bulletModel.bulletType == FlutterDanmakuBulletType.fixed) {
-      tracks.firstWhere((element) => element.bindFixedBulletId == bulletModel.id, orElse: () => null)?.unloadFixedBulletId();
+      try {
+        if (bulletModel.bulletType == FlutterDanmakuBulletType.scroll) {
+          tracks
+              .firstWhere((element) => element.lastBulletId == bulletModel.id)
+              .unloadLastBulletId();
+        } else if (bulletModel.bulletType == FlutterDanmakuBulletType.fixed) {
+          tracks
+              .firstWhere(
+                  (element) => element.bindFixedBulletId == bulletModel.id)
+              .unloadFixedBulletId();
+        }
+      } on StateError {}
     }
   }
 
